@@ -380,7 +380,7 @@ body.holding .mp.on { animation: mp-pulse 1s ease-in-out infinite; }
 @keyframes send-pulse { 50% { box-shadow: 0 0 0 8px rgba(47,125,225,.25); } }
 
 /* ---------- Подсказки ---------- */
-.hint { position: absolute; left: 0; top: 0; z-index: 55; pointer-events: none; visibility: hidden; }
+.hint { position: absolute; left: 0; top: 0; z-index: 55; width: max-content; pointer-events: none; visibility: hidden; }
 .hint.in { visibility: visible; }
 body.no-hints .hint { display: none; }
 .hint-inner { display: flex; align-items: center; animation: hint-in .45s cubic-bezier(.2,.9,.3,1) backwards; }

@@ -302,8 +302,8 @@
   }
 
   /* ======================= Подсказки ======================= */
-  const Hint = (() => {
-    const el = $('[data-hint]'), stepEl = $('[data-hint-step]'), textEl = $('[data-hint-text]'), subEl = $('[data-hint-sub]');
+  const makeHint = el => {
+    const stepEl = $('[data-hint-step]', el), textEl = $('[data-hint-text]', el), subEl = $('[data-hint-sub]', el);
     let cur = null, hlEl = null, flashT = 0, enabled = true;
     try { enabled = localStorage.getItem('otmazka-hints') !== 'off'; } catch (e) {}
     document.body.classList.toggle('no-hints', !enabled);
@@ -321,7 +321,7 @@
     /* Ставим ярлычок с нужной стороны; если вылезает за экран — пробуем другие и подвигаем */
     function place(c) {
       const v = viewBox(), m = 6;
-      const sides = [...new Set([c.side || 'left', 'bottom', 'top', 'left', 'right'])];
+      const sides = c.strict ? [c.side || 'left'] : [...new Set([c.side || 'left', 'bottom', 'top', 'left', 'right'])];
       const put = (side, dx = 0, dy = 0) => {
         el.dataset.side = side;
         const a = anchor({ ...c, side });
@@ -347,7 +347,7 @@
       if (hlEl) hlEl.classList.remove('hl');
       hlEl = c.hl === false ? null : (c.target || null);
       if (hlEl) hlEl.classList.add('hl');
-      stepEl.textContent = c.step ? `ШАГ ${c.step}` : '';
+      stepEl.textContent = c.eyebrow || (c.step ? `ШАГ ${c.step}` : '');
       textEl.textContent = c.text;
       subEl.textContent = c.sub || '';
       place(c);
@@ -377,7 +377,9 @@
       try { localStorage.setItem('otmazka-hints', enabled ? 'on' : 'off'); } catch (e) {}
     }
     return { show, hide, flash, toggle };
-  })();
+  };
+  const Hint = makeHint($('[data-hint="1"]'));
+  const Hint2 = makeHint($('[data-hint="2"]'));
 
   /* ======================= Штамп в руке ======================= */
   const Tool = (() => {
@@ -557,7 +559,7 @@
     function start(fields, o = {}) {
       stop();
       if (document.activeElement && document.activeElement !== document.body) document.activeElement.blur();
-      job = { fields, fi: -1, perKey: o.perKey || 3, paper: o.paper || null, onDone: o.onDone, hold: o.holdEl || null, holding: false };
+      job = { fields, fi: -1, perKey: o.perKey || 3, paper: o.paper || null, onDone: o.onDone, onStart: o.onStart || null, hold: o.holdEl || null, holding: false };
       if (job.hold) job.hold.classList.add('typing-on');
       load(0);
     }
@@ -595,6 +597,7 @@
         job.car.style.top = `${s.offsetTop + 5}px`;
       }
       if (typed) { if (ch === ' ') S.space(); else S.key(); }
+      if (typed && job.onStart) { const f = job.onStart; job.onStart = null; f(); }
       if (job.i >= job.spans.length) next();
     }
     function next() {
@@ -814,6 +817,7 @@
     Pull.stop();
     Tool.disarm();
     Hint.hide();
+    Hint2.hide();
     $$('.mp.on').forEach(m => m.classList.remove('on'));
   }
 
@@ -1080,8 +1084,28 @@
       this.setHeader();
       const text = this.pickExcuse();
       await sleep(withPeel ? 650 : 250);
-      Typer.start([{ el: this.body, text }], { perKey: 3, paper: p, holdEl: this.sheet, onDone: () => this.toSign(text) });
-      Hint.show({ target: this.body, side: 'right', step: '1 ИЗ 4', text: 'Печатайте объяснительную', sub: T('стучите по любым клавишам\nили зажмите мышь на листе', 'стучите пальцем по листу\nили зажмите его') });
+      const typeHint = () => Hint.show({ target: this.body, side: 'right', step: '1 ИЗ 4', text: 'Печатайте объяснительную', sub: T('стучите по любым клавишам\nили зажмите мышь на листе', 'стучите пальцем по листу\nили зажмите его') });
+      const intro = this.intro();
+      Typer.start([{ el: this.body, text }], { perKey: 3, paper: p, holdEl: this.sheet, onDone: () => this.toSign(text), onStart: intro });
+      if (!intro) typeHint();
+      else later(intro, 5500);
+      this.typeHint = typeHint;
+    },
+    /* Вводная перед первой игрой: показать, что ситуацию и наглость можно менять.
+       Показывается один раз — браузер запоминает. Возвращает функцию «закрыть» или null. */
+    intro() {
+      try { if (localStorage.getItem('otmazka-intro') === 'seen') return null; } catch (e) {}
+      try { localStorage.setItem('otmazka-intro', 'seen'); } catch (e) {}
+      const [sit, lvl] = $$('.cards .card');
+      Hint.show({ target: sit, side: MOBILE ? 'bottom' : 'right', dy: MOBILE ? 0 : -60, strict: MOBILE, eyebrow: 'ПЕРЕД НАЧАЛОМ', text: 'Выберите ситуацию', sub: MOBILE ? '' : 'опоздание, прогул, дедлайн…' });
+      Hint2.show({ target: lvl, side: MOBILE ? 'bottom' : 'right', strict: MOBILE, eyebrow: 'ПЕРЕД НАЧАЛОМ', text: MOBILE ? 'И наглость' : 'И уровень наглости', sub: MOBILE ? '' : 'от «скромно» до «бессмертно»' });
+      let open = true;
+      return () => {
+        if (!open) return;
+        open = false;
+        Hint2.hide();
+        if (Typer.active) this.typeHint(); else Hint.hide();
+      };
     },
     toSign(text) {
       Hint.show({ target: this.signPad, side: 'bottom', hl: false, step: '2 ИЗ 4', text: 'Распишитесь', sub: T('зажмите мышь и ведите.\nПросто клик — распишемся за вас', 'проведите пальцем по полю.\nПросто тап — распишемся за вас') });
