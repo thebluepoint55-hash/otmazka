@@ -15,11 +15,30 @@
   const papers = [$('.paper--home'), $('.paper--pay'), $('.paper--gen')];
   const phoneWrap = $('.phone-wrap'), tagBtn = $('.tag-btn');
 
-  /* ---------- Масштаб сцены под окно ---------- */
-  let K = 1;
+  /* ---------- Масштаб сцены под окно ----------
+     Компьютер: сцена 1600×900. Телефон (узкий или вертикальный экран):
+     сцена ~440 единиц в ширину и вертикальная раскладка (body.m в CSS). */
+  let K = 1, DW = 1600, DH = 900, MOBILE = false, onLayout = null;
+  const TOUCH = matchMedia('(pointer: coarse)').matches;
+  const T = (desk, touch) => (TOUCH ? touch : desk);
   function fit() {
-    K = Math.min(innerHeight / 900, innerWidth / 1440);
+    const m = innerWidth < 760 || innerWidth / innerHeight < .8;
+    const changed = m !== MOBILE;
+    MOBILE = m;
+    document.body.classList.toggle('m', m);
+    if (m) { K = Math.min(innerWidth / 440, innerHeight / 780, 1.6); DW = innerWidth / K; DH = innerHeight / K; }
+    else { K = Math.min(innerHeight / 900, innerWidth / 1440); DW = 1600; DH = 900; }
+    stage.style.width = `${DW}px`;
+    stage.style.height = `${DH}px`;
+    stage.style.setProperty('--phone-h', `${Math.round(Math.min(820, DH - 120))}px`);
     stage.style.transform = `translate(-50%, -50%) scale(${K})`;
+    if (onLayout) onLayout(changed);
+  }
+  /* Видимая часть сцены (на широком мониторе края сцены обрезаны окном) */
+  function viewBox() {
+    const vw = innerWidth / K, vh = innerHeight / K;
+    const x0 = Math.max(0, (DW - vw) / 2), y0 = Math.max(0, (DH - vh) / 2);
+    return { x0, y0, x1: DW - x0, y1: DH - y0 };
   }
   addEventListener('resize', fit);
   fit();
@@ -134,7 +153,18 @@
   }
 
   /* ---------- Оттиски печатей ---------- */
-  $$('.stamp').forEach(s => { s.dataset.l = s.style.left; s.dataset.t = s.style.top; });
+  /* Места печатей по умолчанию; на телефоне лист уже — круглую печать сдвигаем */
+  const STAMP_M = { hr: ['196px', '236px'] };
+  $$('.stamp').forEach(s => { s.dataset.dl = s.style.left; s.dataset.dt = s.style.top; });
+  function stampDefaults() {
+    $$('.stamp').forEach(s => {
+      const m = MOBILE && STAMP_M[s.dataset.stamp];
+      s.dataset.l = m ? m[0] : s.dataset.dl;
+      s.dataset.t = m ? m[1] : s.dataset.dt;
+      if (!s.classList.contains('inked')) { s.style.left = s.dataset.l; s.style.top = s.dataset.t; }
+    });
+  }
+  stampDefaults();
   function inkVars(stamp, rot) {
     stamp.style.setProperty('--rr', `${rot}deg`);
     stamp.style.setProperty('--mx', `${rand(0, 170).toFixed(0)}px`);
@@ -288,6 +318,30 @@
       if (c.side === 'top') return { x: x + w / 2, y: y - g };
       return { x: x + w / 2, y: y + h + g };
     }
+    /* Ставим ярлычок с нужной стороны; если вылезает за экран — пробуем другие и подвигаем */
+    function place(c) {
+      const v = viewBox(), m = 6;
+      const sides = [...new Set([c.side || 'left', 'bottom', 'top', 'left', 'right'])];
+      const put = (side, dx = 0, dy = 0) => {
+        el.dataset.side = side;
+        const a = anchor({ ...c, side });
+        el.style.left = `${a.x + (c.dx || 0) + dx}px`;
+        el.style.top = `${a.y + (c.dy || 0) + dy}px`;
+        const r = stageRect(el);
+        return { r, over: Math.max(0, v.x0 + m - r.x) + Math.max(0, r.x + r.w - (v.x1 - m)) + Math.max(0, v.y0 + m - r.y) + Math.max(0, r.y + r.h - (v.y1 - m)) };
+      };
+      let best = null;
+      for (const side of sides) {
+        const t = put(side);
+        if (t.over === 0) return;
+        if (!best || t.over < best.over) best = { side, ...t };
+      }
+      const r = put(best.side).r;
+      let dx = 0, dy = 0;
+      if (r.x < v.x0 + m) dx = v.x0 + m - r.x; else if (r.x + r.w > v.x1 - m) dx = v.x1 - m - r.x - r.w;
+      if (r.y < v.y0 + m) dy = v.y0 + m - r.y; else if (r.y + r.h > v.y1 - m) dy = v.y1 - m - r.y - r.h;
+      put(best.side, dx, dy);
+    }
     function show(c) {
       cur = c;
       if (hlEl) hlEl.classList.remove('hl');
@@ -296,10 +350,7 @@
       stepEl.textContent = c.step ? `ШАГ ${c.step}` : '';
       textEl.textContent = c.text;
       subEl.textContent = c.sub || '';
-      el.dataset.side = c.side || 'left';
-      const a = anchor(c);
-      el.style.left = `${a.x + (c.dx || 0)}px`;
-      el.style.top = `${a.y + (c.dy || 0)}px`;
+      place(c);
       el.classList.remove('in', 'flash');
       void el.offsetWidth;
       el.classList.add('in');
@@ -330,10 +381,14 @@
 
   /* ======================= Штамп в руке ======================= */
   const Tool = (() => {
-    const el = $('[data-tool]'), sh = $('[data-tool-shadow]'), label = $('.label', el);
-    const REST = { x: 1325, y: 772 }, REST_S = .76, REST_R = -8, HELD_S = 1.24;
+    const el = $('[data-tool]'), sh = $('[data-tool-shadow]'), label = $('.label', el), pad = $('.inkpad');
+    const REST_R = -8, HELD_S = 1.24;
     let state = 'rest', target = null, w = 186, h = 186;
-    let pos = { ...REST }, s = REST_S, r = REST_R, cursor = { ...REST }, moved = 0, loop = 0, pickedAt = 0;
+    const restS = () => (MOBILE ? .7 : .76);
+    const rest = () => (MOBILE ? { x: DW - 76, y: DH - 50 } : { x: 1325, y: 772 });
+    /* На телефоне штамп без дела прячется за нижний край вместе с подушкой */
+    const home = () => (MOBILE && !target ? { x: DW - 76, y: DH + 180 } : rest());
+    let pos = home(), s = restS(), r = REST_R, cursor = { ...pos }, moved = 0, loop = 0, pickedAt = 0;
 
     function setShape(stamp, txt) {
       const round = stamp.classList.contains('stamp--round');
@@ -356,19 +411,35 @@
       sh.style.transform = `translate(${pos.x - w / 2 + ox}px, ${pos.y - h / 2 + oy}px) rotate(${r}deg) scale(${ss})`;
       sh.style.opacity = resting ? '.7' : (.9 - lift * .45).toFixed(2);
     }
-    function arm(t) {
+    function slideTo(to, ms = 420) {
+      const a = { ...pos };
+      return tween(ms, q => { pos.x = a.x + (to.x - a.x) * q; pos.y = a.y + (to.y - a.y) * q; render(); }, ease.out);
+    }
+    async function arm(t) {
       target = t;
       setShape(t.stamp, t.label);
-      el.classList.add('armed');
       if (t.mp) { placeMp(t.mp, t.stamp); t.mp.classList.add('on'); }
+      if (MOBILE && state === 'rest') {
+        pad.classList.add('in');
+        s = restS();
+        await slideTo(rest());
+      }
+      if (target === t && state === 'rest') el.classList.add('armed');
     }
     function disarm() {
       cancelAnimationFrame(loop); loop = 0;
       if (target && target.mp) target.mp.classList.remove('on');
       target = null; state = 'rest';
-      pos = { ...REST }; s = REST_S; r = REST_R;
+      pos = home(); s = restS(); r = REST_R;
       el.classList.remove('armed');
       document.body.classList.remove('holding');
+      pad.classList.remove('in');
+      render();
+    }
+    function relayout() {
+      if (state !== 'rest') return;
+      pos = home(); s = restS();
+      pad.classList.toggle('in', MOBILE && !!target);
       render();
     }
     function follow() {
@@ -408,7 +479,7 @@
       if (L.inside) {
         let { x, y } = L;
         if (t.mp) {
-          /* Лёгкий магнит к «М. П.», чтобы оттиск ложился аккуратнее */
+          /* Лёгкий магнит к «М. П.», чтобы оттиск ложился аккуратнее */
           const mx = t.mp.offsetLeft + t.mp.offsetWidth / 2, my = t.mp.offsetTop + t.mp.offsetHeight / 2;
           if (Math.hypot(x - mx, y - my) < 70) { x += (mx - x) * .55; y += (my - y) * .55; }
           t.mp.classList.remove('on');
@@ -416,11 +487,11 @@
         impress(t.stamp, x, y, r - t.angle + rand(-1.5, 1.5), t.power || 1);
         await tween(100, q => { s = 1 - .035 * Math.sin(q * Math.PI); render(); });
         /* Поднимаем и возвращаем на подушку */
-        const x1 = pos.x, y1 = pos.y, r1 = r;
+        const x1 = pos.x, y1 = pos.y, r1 = r, to = rest(), rs = restS();
         await tween(600, q => {
-          pos.x = x1 + (REST.x - x1) * q;
-          pos.y = y1 + (REST.y - y1) * q - Math.sin(q * Math.PI) * 50;
-          s = 1 + (REST_S - 1) * q + Math.sin(q * Math.PI) * .34;
+          pos.x = x1 + (to.x - x1) * q;
+          pos.y = y1 + (to.y - y1) * q - Math.sin(q * Math.PI) * 50;
+          s = 1 + (rs - 1) * q + Math.sin(q * Math.PI) * .34;
           r = r1 + (REST_R - r1) * q;
           render();
         }, ease.inOut);
@@ -428,6 +499,10 @@
         document.body.classList.remove('holding');
         render();
         S.tap();
+        if (MOBILE) {
+          pad.classList.remove('in');
+          later(() => { if (state === 'rest' && !target) slideTo(home(), 380); }, 250);
+        }
         if (t.onDone) t.onDone();
       } else {
         S.thud();
@@ -442,8 +517,8 @@
       if (state !== 'held') return;
       state = 'busy';
       cancelAnimationFrame(loop);
-      const x1 = pos.x, y1 = pos.y, s1 = s, r1 = r;
-      await tween(420, q => { pos.x = x1 + (REST.x - x1) * q; pos.y = y1 + (REST.y - y1) * q; s = s1 + (REST_S - s1) * q; r = r1 + (REST_R - r1) * q; render(); }, ease.inOut);
+      const x1 = pos.x, y1 = pos.y, s1 = s, r1 = r, to = rest(), rs = restS();
+      await tween(420, q => { pos.x = x1 + (to.x - x1) * q; pos.y = y1 + (to.y - y1) * q; s = s1 + (rs - s1) * q; r = r1 + (REST_R - r1) * q; render(); }, ease.inOut);
       state = 'rest';
       el.classList.add('armed');
       document.body.classList.remove('holding');
@@ -469,9 +544,9 @@
 
     setShape($('[data-stamp="hr"]'));
     return {
-      arm, disarm, drop,
+      arm, disarm, drop, relayout,
       get held() { return state === 'held'; },
-      top: () => ({ x: REST.x, y: REST.y - h * REST_S / 2 - 18 })
+      top: () => { const p = rest(); return { x: p.x, y: p.y - h * restS() / 2 - 18 }; }
     };
   })();
 
@@ -552,7 +627,9 @@
     addEventListener('pointerdown', e => {
       if (!job || !job.hold || !job.hold.contains(e.target) || e.target.closest('button')) return;
       job.holding = true;
-      holdLoop();
+      advance(job.perKey);
+      clearTimeout(holdT);
+      holdT = setTimeout(holdLoop, k(240));
     });
     const end = () => { if (job) job.holding = false; clearTimeout(holdT); };
     addEventListener('pointerup', end);
@@ -574,7 +651,7 @@
 
   /* ======================= Подпись от руки ======================= */
   const Sign = (() => {
-    const padEl = $('[data-sign-pad]'), path = $('.sign-user path'), def = $$('.sign-def path');
+    const padEl = $('[data-sign-pad]'), path = $('.sign-user path'), defSvg = $('.sign-def'), def = $$('path', defSvg);
     let job = null, drawing = false, strokes = [], len = 0, lastSnd = 0, doneT = 0;
 
     const local = e => {
@@ -601,6 +678,7 @@
       padEl.classList.add('on');
     }
     async function autoDraw() {
+      defSvg.classList.add('show');
       S.scribble(1.0);
       await done(play(def[0], [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 800, easing: 'cubic-bezier(.45,.05,.55,.95)', fill: 'forwards' }));
       await done(play(def[1], [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 260, easing: 'ease-out', fill: 'forwards' }));
@@ -653,25 +731,33 @@
       clearTimeout(doneT);
       strokes = []; len = 0; drawing = false;
       redraw();
+      defSvg.classList.remove('show');
       def.forEach(p => { p.getAnimations().forEach(a => a.cancel()); p.style.strokeDashoffset = ''; });
     }
-    function instant() { clear(); def.forEach(p => { p.style.strokeDashoffset = 0; }); }
+    function instant() { clear(); defSvg.classList.add('show'); def.forEach(p => { p.style.strokeDashoffset = 0; }); }
     function stop() { job = null; drawing = false; clearTimeout(doneT); padEl.classList.remove('on'); }
     return { start, clear, instant, stop };
   })();
 
   /* ======================= Чек: вытянуть и оторвать ======================= */
+  /* На компьютере чек выезжает вбок из-под листа, на телефоне — сверху, как из принтера */
+  const RC = () => (MOBILE
+    ? { axis: 'y', out: 200, tear: 330, mid: [10, 640], fin: [0, 790], rot: 3 }
+    : { axis: 'x', out: 190, tear: 300, mid: [170, -34], fin: [-30, 40], rot: 5 });
+  const rcT = v => (RC().axis === 'x'
+    ? `translate(${v.toFixed(1)}px,0) rotate(${(v * .0045).toFixed(2)}deg)`
+    : `translate(0,${v.toFixed(1)}px) rotate(${(-v * .002).toFixed(2)}deg)`);
   const Pull = (() => {
     const rc = $('[data-receipt]');
-    const OUT = 190, TEAR = 300;
     let job = null, drag = null;
 
-    function set(x) {
-      job.x = x;
-      rc.style.transform = `translate(${x.toFixed(1)}px,0) rotate(${(x * .0045).toFixed(2)}deg)`;
+    function set(v) {
+      job.v = v;
+      rc.style.transform = rcT(v);
     }
     function start(onDone) {
-      job = { x: OUT, onDone, tick: OUT };
+      const c = RC();
+      job = { v: c.out, onDone, tick: c.out };
       rc.classList.add('pullable');
     }
     function tear() {
@@ -680,36 +766,37 @@
       job = null; drag = null;
       rc.classList.remove('pullable', 'grabbing');
       S.rip();
-      j.onDone(j.x);
+      j.onDone(j.v);
     }
     rc.addEventListener('pointerdown', e => {
       if (!job) return;
       e.preventDefault();
       rc.setPointerCapture(e.pointerId);
-      drag = { x0: e.clientX, base: job.x, moved: 0 };
+      drag = { x0: e.clientX, y0: e.clientY, base: job.v, moved: 0 };
       rc.classList.add('grabbing');
     });
     rc.addEventListener('pointermove', e => {
       if (!job || !drag) return;
-      const dx = (e.clientX - drag.x0) / K;
-      drag.moved = Math.max(drag.moved, Math.abs(dx));
-      const x = clamp(drag.base + (dx > 0 ? dx * .9 : dx * .3), OUT - 12, TEAR + 20);
-      if (Math.abs(x - job.tick) > 14) { S.tap(); job.tick = x; }
-      set(x);
-      if (x >= TEAR) tear();
+      const c = RC();
+      const d = (c.axis === 'x' ? e.clientX - drag.x0 : e.clientY - drag.y0) / K;
+      drag.moved = Math.max(drag.moved, Math.abs(d));
+      const v = clamp(drag.base + (d > 0 ? d * .9 : d * .3), c.out - 12, c.tear + 20);
+      if (Math.abs(v - job.tick) > 14) { S.tap(); job.tick = v; }
+      set(v);
+      if (v >= c.tear) tear();
     });
     rc.addEventListener('pointerup', async () => {
       if (!job || !drag) return;
-      const d = drag;
+      const d = drag, c = RC();
       drag = null;
       rc.classList.remove('grabbing');
-      const x0 = job.x;
+      const v0 = job.v;
       if (d.moved < 6) {
         S.printer(.35);
-        await tween(380, q => set(x0 + (TEAR - x0) * q), ease.inOut);
+        await tween(380, q => set(v0 + (c.tear - v0) * q), ease.inOut);
         tear();
-      } else if (x0 < TEAR) {
-        await tween(300, q => { if (job) set(x0 + (OUT - x0) * q); }, ease.out);
+      } else if (v0 < c.tear) {
+        await tween(300, q => { if (job) set(v0 + (c.out - v0) * q); }, ease.out);
       }
     });
     function stop() { job = null; drag = null; rc.classList.remove('pullable', 'grabbing'); }
@@ -751,13 +838,13 @@
     armStamp() {
       Tool.arm({
         stamp: this.stamp, container: this.sheet, angle: -.5, mp: this.mp, power: .9,
-        onPick: () => Hint.show({ target: this.mp, side: 'right', hl: false, step: '1 ИЗ 2', text: 'Шлёпните на «М. П.»', sub: 'клик — удар печатью' }),
+        onPick: () => Hint.show({ target: this.mp, side: 'right', hl: false, step: '1 ИЗ 2', text: 'Шлёпните на «М. П.»', sub: T('клик — удар печатью', 'тап — удар печатью') }),
         onDone: () => {
           Hint.show({ target: this.btn, side: 'left', step: '2 ИЗ 2', text: 'Проверено! Жмите кнопку' });
           this.btn.classList.add('nudge');
         }
       });
-      Hint.show({ point: Tool.top(), side: 'top', hl: false, step: '1 ИЗ 2', text: 'Возьмите печать', sub: 'кликните по штампу' });
+      Hint.show({ point: Tool.top(), side: 'top', hl: false, step: '1 ИЗ 2', text: 'Возьмите печать', sub: T('кликните по штампу', 'нажмите на штамп') });
     },
     async enter(intro) {
       const tok = RUN;
@@ -809,7 +896,7 @@
         perKey: 2, holdEl: this.sheet,
         onDone: () => this.hintPay()
       });
-      Hint.show({ target: this.fieldsBox, side: 'right', step: '1 ИЗ 4', text: 'Заполните квитанцию', sub: 'стучите по любым клавишам\nили зажмите мышь на листе.\nКарта тестовая, вводить ничего не нужно' });
+      Hint.show({ target: this.fieldsBox, side: 'right', step: '1 ИЗ 4', text: 'Заполните квитанцию', sub: T('стучите по любым клавишам\nили зажмите мышь на листе.\nКарта тестовая, вводить ничего не нужно', 'стучите пальцем по листу\nили зажмите его.\nКарта тестовая, вводить ничего не нужно') });
     },
     hintPay() {
       if (this.busy) return;
@@ -833,38 +920,38 @@
 
       /* Принтер выдвигает чек рывками, наполовину */
       S.printer(.9);
-      const steps = 6, frames = [{ transform: 'translate(0px,0) rotate(0deg)' }];
+      const c = RC(), steps = 6, frames = [{ transform: rcT(0) }];
       for (let s = 1; s <= steps; s++) {
-        const x = 190 * s / steps;
-        frames.push({ offset: (s - .45) / steps, transform: `translate(${x - 4}px,0) rotate(${(x * .0045).toFixed(2)}deg)`, easing: 'ease-out' });
-        frames.push({ offset: s / steps, transform: `translate(${x}px,0) rotate(${(x * .0045).toFixed(2)}deg)` });
+        const v = c.out * s / steps;
+        frames.push({ offset: (s - .45) / steps, transform: rcT(v - 4), easing: 'ease-out' });
+        frames.push({ offset: s / steps, transform: rcT(v) });
       }
       const a = play(rc, frames, { duration: 900, fill: 'forwards' });
       await done(a);
-      rc.style.transform = 'translate(190px,0) rotate(.86deg)';
+      rc.style.transform = rcT(c.out);
       anims.delete(a); a.cancel();
       b.textContent = 'Чек готов';
       Pull.start(x => this.placeReceipt(x));
-      Hint.show({ target: rc, side: 'right', step: '3 ИЗ 4', text: 'Оторвите чек', sub: 'потяните его вправо' });
+      Hint.show({ target: rc, side: MOBILE ? 'bottom' : 'right', step: '3 ИЗ 4', text: 'Оторвите чек', sub: MOBILE ? 'потяните его вниз' : 'потяните его вправо' });
     },
     async placeReceipt(x) {
-      const rc = this.receipt;
+      const rc = this.receipt, c = RC();
       Hint.hide();
       rc.style.zIndex = 3;
       S.paper(.4);
       const toSheet = play(rc, [
-        { transform: `translate(${x}px,0) rotate(${(x * .0045).toFixed(2)}deg) scale(1)`, easing: 'cubic-bezier(.3,0,.3,1)' },
-        { offset: .45, transform: 'translate(170px,-34px) rotate(3deg) scale(1.07)', easing: 'cubic-bezier(.5,0,.4,1)' },
-        { transform: 'translate(-30px,40px) rotate(5deg) scale(1)' }
+        { transform: `${rcT(x)} scale(1)`, easing: 'cubic-bezier(.3,0,.3,1)' },
+        { offset: .45, transform: `translate(${c.mid[0]}px,${c.mid[1]}px) rotate(${c.rot - 2}deg) scale(1.07)`, easing: 'cubic-bezier(.5,0,.4,1)' },
+        { transform: `translate(${c.fin[0]}px,${c.fin[1]}px) rotate(${c.rot}deg) scale(1)` }
       ], { duration: 820, fill: 'forwards' });
       play($('.r-shadow', rc), [{ transform: 'none', opacity: 1 }, { offset: .45, transform: 'translate(14px,22px) scale(1.04)', opacity: .7 }, { transform: 'none', opacity: 1 }], { duration: 820 });
       await done(toSheet);
-      rc.style.transform = 'translate(-30px,40px) rotate(5deg)';
+      rc.style.transform = `translate(${c.fin[0]}px,${c.fin[1]}px) rotate(${c.rot}deg)`;
       anims.delete(toSheet); toSheet.cancel();
       S.cash();
       await sleep(250);
       Tool.arm({
-        stamp: this.stamp, container: rc, angle: 4.5, mp: this.mp, power: .8, label: 'ОПЛАЧЕНО',
+        stamp: this.stamp, container: rc, angle: c.rot - .5, mp: this.mp, power: .8, label: 'ОПЛАЧЕНО',
         missText: 'Мимо! Ставьте на чек',
         onPick: () => Hint.show({ target: this.mp, side: 'right', hl: false, step: '4 ИЗ 4', text: 'Погасите чек', sub: 'шлёпните на «М. П.»' }),
         onDone: async () => {
@@ -976,7 +1063,7 @@
     },
     /* Печать по умолчанию — над строкой подписи */
     stampHome() {
-      this.stamp.style.left = '150px';
+      this.stamp.style.left = MOBILE ? '40px' : '150px';
       this.stamp.style.top = `${this.signRow.offsetTop - 34}px`;
     },
     reset() {
@@ -994,10 +1081,10 @@
       const text = this.pickExcuse();
       await sleep(withPeel ? 650 : 250);
       Typer.start([{ el: this.body, text }], { perKey: 3, paper: p, holdEl: this.sheet, onDone: () => this.toSign(text) });
-      Hint.show({ target: this.body, side: 'right', step: '1 ИЗ 4', text: 'Печатайте объяснительную', sub: 'стучите по любым клавишам\nили зажмите мышь на листе' });
+      Hint.show({ target: this.body, side: 'right', step: '1 ИЗ 4', text: 'Печатайте объяснительную', sub: T('стучите по любым клавишам\nили зажмите мышь на листе', 'стучите пальцем по листу\nили зажмите его') });
     },
     toSign(text) {
-      Hint.show({ target: this.signPad, side: 'bottom', hl: false, step: '2 ИЗ 4', text: 'Распишитесь', sub: 'зажмите мышь и ведите.\nПросто клик — распишемся за вас' });
+      Hint.show({ target: this.signPad, side: 'bottom', hl: false, step: '2 ИЗ 4', text: 'Распишитесь', sub: T('зажмите мышь и ведите.\nПросто клик — распишемся за вас', 'проведите пальцем по полю.\nПросто тап — распишемся за вас') });
       Sign.start(() => this.toStamp(text));
     },
     toStamp(text) {
@@ -1018,7 +1105,7 @@
       this.actions.classList.add('in');
       this.busy = false;
       await sleep(450);
-      Hint.show({ target: this.sendBtn, side: 'bottom', step: '4 ИЗ 4', text: 'Отправьте начальнику', sub: 'или «Составить ещё» — новый лист' });
+      Hint.show({ target: this.sendBtn, side: 'bottom', step: '4 ИЗ 4', text: 'Отправьте начальнику', sub: MOBILE ? '' : 'или «Составить ещё» — новый лист' });
     },
     /* Мгновенно заполненный лист — для горячей клавиши 4 */
     fillInstant() {
@@ -1316,6 +1403,7 @@
   const unlock = () => S.unlock();
   addEventListener('pointerdown', unlock, { capture: true });
   addEventListener('keydown', unlock, { capture: true });
+  addEventListener('touchend', unlock, { capture: true });
 
   /* ---------- Клавиатура ----------
      Пока идёт печать, любые клавиши печатают. Режиссёрские клавиши
@@ -1341,6 +1429,13 @@
     if (document.activeElement) document.activeElement.blur();
     act();
   });
+
+  /* ---------- Смена раскладки: компьютер ↔ телефон ---------- */
+  onLayout = changed => {
+    stampDefaults();
+    Tool.relayout();
+    if (changed && screen >= 0) go(screen === 3 ? 2 : screen);
+  };
 
   /* ---------- Старт ---------- */
   gen.renderSit(false);

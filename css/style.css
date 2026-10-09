@@ -232,7 +232,7 @@ button:focus-visible { outline: 2px dashed var(--ink); outline-offset: 4px; }
 .sign-r em { font-style: normal; }
 .actions { display: flex; gap: 16px; margin-top: 30px; opacity: 0; translate: 0 10px; pointer-events: none; transition: opacity .4s ease, translate .5s cubic-bezier(.2,.9,.3,1); }
 .actions.in { opacity: 1; translate: 0 0; pointer-events: auto; }
-.actions .btn { height: 56px; padding: 0 22px; font-size: 17.5px; }
+.actions .btn { height: 56px; padding: 0 22px; font-size: 17.5px; white-space: nowrap; }
 
 /* ---------- Штампы ---------- */
 .stamp {
@@ -361,7 +361,8 @@ body.holding .mp.on { animation: mp-pulse 1s ease-in-out infinite; }
 @keyframes mp-pulse { 50% { border-color: rgba(211,38,58,.95); background: rgba(211,38,58,.06); } }
 
 /* Подпись от руки */
-.sign-def { pointer-events: none; }
+.sign-def { pointer-events: none; opacity: 0; }
+.sign-def.show { opacity: 1; }
 .sign-pad { position: absolute; left: 66px; width: 166px; bottom: -6px; height: 62px; border-radius: 6px; pointer-events: none; }
 .sign-pad.on { pointer-events: auto; cursor: crosshair; outline: 2px dashed rgba(29,46,138,.5); outline-offset: 2px; background: rgba(29,46,138,.05); }
 .sign-user { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
@@ -411,6 +412,99 @@ body.no-hints .hint { display: none; }
 /* Подсветка цели */
 .hl { outline: 3px solid rgba(211,38,58,0); outline-offset: 10px; animation: hl 1.3s ease-in-out infinite; }
 @keyframes hl { 50% { outline-color: rgba(211,38,58,.7); outline-offset: 4px; } }
+
+/* ======================= Телефоны: вертикальная раскладка =======================
+   Включается классом body.m (см. fit() в app.js). Сцена шириной ~440 единиц,
+   лист 420 по центру, декор спрятан, управление над листом. */
+#stage { touch-action: none; }
+body.m { touch-action: manipulation; }
+body.m .chrome { padding: 10px 12px; }
+body.m .brand { font-size: 9px; letter-spacing: .1em; }
+body.m .snd { gap: 7px; padding: 5px 9px 5px 6px; font-size: 9px; }
+body.m .snd-sw { width: 26px; height: 14px; }
+body.m .snd-sw i { width: 11px; height: 10px; }
+body.m .snd[aria-pressed="true"] .snd-sw i { transform: translateX(11px); }
+body.m .cup-ring, body.m .pencil, body.m .eraser, body.m .crumbs, body.m .sticky, body.m .calendar, body.m .tally { display: none; }
+
+body.m .paper { --ptop: 48px; left: calc(50% - 210px); top: var(--ptop); width: 420px; height: 1400px; }
+body.m .paper--gen { --ptop: 170px; }
+body.m .stack i { left: calc(50% - 210px); top: 48px; width: 420px; height: 1400px; }
+body.m[data-screen="2"] .stack i, body.m[data-screen="3"] .stack i { top: 170px; }
+body.m .sheet {
+  padding: 22px 20px 0 54px;
+  background:
+    linear-gradient(90deg, transparent 38px, var(--margin) 38px 39px, transparent 39px, transparent 42px, rgba(233,156,166,.55) 42px 43px, transparent 43px),
+    linear-gradient(165deg, rgba(255,255,255,.55), rgba(255,255,255,0) 35%, rgba(0,0,0,0) 70%, rgba(40,50,60,.05)),
+    repeating-linear-gradient(transparent 0 29px, var(--rule) 29px 30px) 0 52px / 100% calc(100% - 52px) no-repeat,
+    var(--noise-paper),
+    var(--paper);
+}
+body.m .clip { right: 150px; }
+body.m .meta { font-size: 9.5px; letter-spacing: .07em; }
+body.m .lede { margin-top: 20px; font-size: 15.5px; line-height: 26px; }
+body.m .foot { margin-top: 20px; font-size: 9.5px; letter-spacing: .05em; }
+body.m .btn { height: 54px; padding: 0 16px; font-size: 16px; }
+body.m .btn--cta[data-act="start"] { margin-top: 26px; }
+
+/* Главная */
+body.m .h1 { margin-top: 22px; font-size: 41px; line-height: 45px; letter-spacing: -.025em; }
+body.m .field .lbl { width: 86px; font-size: 9.5px; letter-spacing: .07em; }
+body.m .w { font-size: 22px; }
+body.m .stamp--round { width: 150px; height: 150px; }
+
+/* Оплата: чек выезжает сверху, тянуть вниз */
+body.m .h2 { margin-top: 20px; font-size: 32px; line-height: 45px; }
+body.m .pf .lbl { width: 92px; font-size: 9px; letter-spacing: .05em; }
+body.m .pf .lbl--in { margin: 0 8px 0 12px; }
+body.m .pf .pv { font-size: 14px; }
+body.m .pf em { display: none; }
+body.m .total { height: 54px; margin-top: 20px; gap: 12px; }
+body.m .total b { font-size: 30px; }
+body.m .foot--note { margin-top: 18px; font-size: 10px; }
+body.m .receipt { left: 76px; top: -490px; z-index: 3; }
+
+/* Генератор: карточки — панель над листом */
+body.m .cards { left: calc(50% - 210px); top: 44px; width: 420px; flex-direction: row; align-items: stretch; gap: 10px; }
+body.m .cards .prop { --fx: 0; }
+body.m .card { padding: 6px 12px 10px; background: #F8F6EF; }
+body.m .card:first-child { flex: 1; }
+body.m .card h3 { margin-bottom: 4px; font-size: 9px; line-height: 16px; }
+body.m .opts { flex-direction: row; flex-wrap: wrap; gap: 0 6px; }
+body.m .opt { height: 25px; padding: 0 5px; font-size: 14.5px; line-height: 25px; }
+body.m .opt svg { top: -3px; height: 31px; }
+body.m .dots { gap: 6px; margin-top: 4px; }
+body.m .dot { width: 20px; height: 20px; border-width: 2px; }
+body.m .dots-l { margin-top: 6px; font-size: 21px; line-height: 24px; }
+body.m .paper--gen .meta { display: none; }
+body.m .to { font-size: 14px; line-height: 24px; }
+body.m .title { margin-top: 14px; font-size: 19px; letter-spacing: .2em; }
+body.m .typed { margin-top: 16px; min-height: 196px; font-size: 15px; line-height: 28px; }
+body.m .caret { height: 19px; }
+body.m .sign { height: 56px; font-size: 12px; }
+body.m .sign-r em { display: none; }
+body.m .sign-r svg.sign-def { width: 130px; }
+body.m .sign-pad { left: 54px; width: 142px; }
+body.m .actions { margin-top: 18px; gap: 10px; }
+body.m .actions .btn { height: 50px; padding: 0 11px; font-size: 14px; }
+body.m .stamp--rect b, body.m .stamp--paid b { font-size: 26px; }
+body.m .stamp--rect small { font-size: 8.5px; }
+
+/* Подушка выезжает из угла, только когда нужна печать */
+body.m .inkpad { left: auto; top: auto; right: -46px; bottom: -42px; width: 230px; height: 150px; translate: 0 230px; transition: translate .45s cubic-bezier(.2,.9,.3,1); }
+body.m .inkpad.in { translate: 0 0; }
+body.m .inkpad span { display: none; }
+
+/* Мессенджер */
+body.m .phone-wrap { left: calc(50% - 190px); top: 38px; width: 380px; height: var(--phone-h, 720px); rotate: -1.5deg; }
+body.m .stamp--big b { font-size: 38px; }
+body.m .stamp--big.stamp--fail b { font-size: 29px; }
+body.m .tag-btn { left: calc(50% - 140px); top: auto; bottom: 12px; width: 280px; padding: 12px 16px; font-size: 21px; rotate: 1.5deg; }
+
+/* Подсказки компактнее */
+body.m .hint-tag { max-width: 214px; padding: 8px 12px 10px; }
+body.m .hint-tag b { font-size: 24px; }
+body.m .hint-tag i { font-size: 10px; }
+body.m .hint-arrow { width: 40px; height: 40px; }
 
 /* ---------- Уменьшенное движение ---------- */
 @media (prefers-reduced-motion: reduce) {
