@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Отмазка · Бюро объяснительных</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&family=Russo+One&display=swap&subset=cyrillic" rel="stylesheet">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-screen="0">
+
+<div class="chrome">
+  <div class="brand">ОТМАЗКА <i>·</i> БЮРО ОБЪЯСНИТЕЛЬНЫХ</div>
+  <button class="snd" type="button" aria-pressed="true" aria-label="Звук">
+    <span class="snd-sw" aria-hidden="true"><i></i></span><span class="snd-l">ЗВУК ВКЛ</span>
+  </button>
+</div>
+
+<main id="stage">
+<div id="world">
+
+  <!-- Постоянные вещи на столе -->
+  <div class="desk">
+    <div class="cup-ring"></div>
+    <div class="cup-ring cup-ring--b"></div>
+    <div class="pencil"><i></i></div>
+    <div class="eraser"><i></i></div>
+    <div class="crumbs"></div>
+    <div class="stack"><i></i><i></i></div>
+    <div class="inkpad"><i></i><span>ШТЕМПЕЛЬНАЯ ПОДУШКА</span></div>
+  </div>
+
+  <!-- ============ 1. ГЛАВНАЯ ============ -->
+  <section class="scene" id="scene-home" aria-label="Главная">
+    <div class="prop sticky sticky--yellow" style="left:150px;top:150px;--rot:-6deg">Шеф опять спросит, почему опоздал. Придумать до&nbsp;9:00!!</div>
+    <div class="prop calendar" style="left:175px;top:420px;--rot:-4deg">
+      <div class="cal-rings"><i></i><i></i></div>
+      <div class="cal-month" data-cal="month">ОКТЯБРЬ</div>
+      <div class="cal-day" data-cal="day">9</div>
+      <div class="cal-wd" data-cal="wd">пятница</div>
+      <div class="cal-note">опоздать красиво</div>
+    </div>
+
+    <div class="paper paper--home">
+      <div class="lift"></div>
+      <div class="sheet">
+        <div class="meta"><span>ФОРМА № ОТМ-1</span><span>КОД ПО ОКУД 0301024</span></div>
+        <h1 class="h1">Объяснительная <em>за&nbsp;три секунды</em></h1>
+        <p class="lede">Оправдания, которые подпишет любой начальник. Составлены по&nbsp;внутреннему регламенту.</p>
+        <div class="fields">
+          <div class="field"><span class="lbl">Ф. И. О.</span><span class="val" data-f="name"></span></div>
+          <div class="field"><span class="lbl">ПРИЧИНА</span><span class="val" data-f="reason"></span></div>
+          <div class="field"><span class="lbl">ОПОЗДАНИЕ</span><span class="val" data-f="delay"></span></div>
+        </div>
+        <button class="btn btn--cta" type="button" data-act="start">Составить объяснительную <span>· 149 ₽</span></button>
+        <div class="foot">ВЫДАНО 12 847 ОТМАЗОК · УВОЛЕНО 0</div>
+
+        <div class="stamp stamp--round" data-stamp="hr" style="left:352px;top:282px;--r:-14deg">
+          <svg viewBox="0 0 160 160" aria-hidden="true">
+            <defs><path id="arc-hr" d="M80,80 m-63,0 a63,63 0 1,1 126,0 a63,63 0 1,1 -126,0"/></defs>
+            <circle cx="80" cy="80" r="76" fill="none" stroke="currentColor" stroke-width="4"/>
+            <circle cx="80" cy="80" r="52" fill="none" stroke="currentColor" stroke-width="2"/>
+            <text font-size="12" fill="currentColor"><textPath href="#arc-hr" textLength="392" lengthAdjust="spacing">ОТДЕЛ КАДРОВ ★ ООО «ОТМАЗКА» ★ г. МОСКВА ★</textPath></text>
+            <text x="80" y="74" text-anchor="middle" font-size="17" fill="currentColor">ПРОВЕРЕНО</text>
+            <path d="M44 82 H116" stroke="currentColor" stroke-width="1.5"/>
+            <text x="80" y="98" text-anchor="middle" font-size="10.5" fill="currentColor" letter-spacing="1">ОТДЕЛОМ КАДРОВ</text>
+          </svg>
+        </div>
+        <div class="mp mp--round" data-mp="hr"><span>М. П.</span></div>
+        <div class="bend"><i></i></div>
+        <div class="shade"></div>
+      </div>
+      <svg class="clip" viewBox="0 0 30 92" aria-hidden="true"><path d="M9 80V14a6 6 0 0 1 12 0v60a9 9 0 0 1-18 0V22"/></svg>
+    </div>
+  </section>
+
+  <!-- ============ 2. ОПЛАТА ============ -->
+  <section class="scene" id="scene-pay" aria-label="Оплата">
+    <div class="prop sticky sticky--yellow" style="left:140px;top:170px;--rot:-5deg">149 ₽ — дешевле, чем депремирование</div>
+    <div class="prop sticky sticky--blue" style="left:150px;top:430px;--rot:4deg">Карта тестовая. Деньги не&nbsp;спишутся, нервы тоже</div>
+
+    <div class="paper paper--pay">
+      <div class="lift"></div>
+      <div class="receipt" data-receipt>
+        <div class="r-shadow"></div>
+        <div class="r-in">
+          <div class="r-c">*** ООО «ОТМАЗКА» ***</div>
+          <div class="r-c">ИНН 7700000149</div>
+          <div>КАССОВЫЙ ЧЕК № 0042</div>
+          <div data-r="dt">09.10.2026 08:57</div>
+          <div class="r-hr"></div>
+          <b><span>Объяснительная «Премиум»</span><span>149,00</span></b>
+          <b><span>Печать «Согласовано»</span><span>0,00</span></b>
+          <b><span>Подпись от руки</span><span>0,00</span></b>
+          <b><span>НДС (нервы)</span><span>0,00</span></b>
+          <div class="r-hr"></div>
+          <b class="r-total"><span>ИТОГО</span><span>=149,00</span></b>
+          <b><span>КАРТА</span><span>**** 4242</span></b>
+          <div class="r-hr"></div>
+          <div class="r-c r-thanks">Спасибо, что опоздали с нами!</div>
+          <div class="r-bar" data-r="bar"></div>
+          <div class="r-c r-small">ФН 9960440300042 ФД 0042 ФП 1490001</div>
+        </div>
+        <div class="stamp stamp--rect stamp--paid" data-stamp="paid" style="left:44px;top:118px;--r:-16deg"><b>ОПЛАЧЕНО</b><small data-date>09.10.2026</small></div>
+        <div class="mp" data-mp="paid"><span>М. П.</span></div>
+      </div>
+      <div class="sheet">
+        <div class="meta"><span>ПЛАТЁЖНОЕ ПОРУЧЕНИЕ</span><span>№ 0042</span></div>
+        <h2 class="h2">Квитанция на оплату</h2>
+        <p class="lede">Услуга: составление объяснительной категории «Премиум», с&nbsp;подписью и&nbsp;печатью.</p>
+        <div class="pfields">
+          <div class="pf"><span class="lbl">НОМЕР КАРТЫ</span><span class="pv" data-p="4242 4242 4242 4242"></span><em>тестовая</em></div>
+          <div class="pf pf--half"><span class="lbl">СРОК</span><span class="pv" data-p="12 / 29"></span><span class="lbl lbl--in">CVC</span><span class="pv" data-p="•••"></span></div>
+          <div class="pf"><span class="lbl">ПЛАТЕЛЬЩИК</span><span class="pv" data-p="Опоздавший А. А."></span></div>
+          <div class="pf"><span class="lbl">НАЗНАЧЕНИЕ</span><span class="pv" data-p="Спасение репутации"></span></div>
+          <div class="pf"><span class="lbl">ПРОПИСЬЮ</span><span class="pv" data-p="Сто сорок девять руб. 00 коп."></span></div>
+        </div>
+        <div class="total"><span>ИТОГО К ОПЛАТЕ</span><b>149,00 ₽</b></div>
+        <button class="btn btn--cta btn--pay" type="button" data-act="pay">Оплатить 149 ₽</button>
+        <div class="foot foot--note">Оплата бутафорская: данные не вводятся и никуда не отправляются.</div>
+        <div class="bend"><i></i></div>
+        <div class="shade"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 3. ГЕНЕРАТОР ============ -->
+  <section class="scene" id="scene-gen" aria-label="Генератор">
+    <div class="cards">
+      <div class="prop card" style="--rot:-2deg">
+        <h3>СИТУАЦИЯ</h3>
+        <div class="opts" data-opts></div>
+      </div>
+      <div class="prop card" style="--rot:1.5deg;--d:.12s">
+        <h3>УРОВЕНЬ НАГЛОСТИ</h3>
+        <div class="dots" data-dots></div>
+        <div class="dots-l" data-level-label>Уверенно</div>
+      </div>
+    </div>
+    <div class="prop sticky sticky--pink" style="left:1180px;top:140px;--rot:5deg;--d:.18s">Шеф сегодня не&nbsp;в&nbsp;духе. Без шуток!</div>
+    <div class="prop tally" style="left:160px;top:560px;--rot:-3deg;--d:.24s">
+      <div class="tally-h">ЖУРНАЛ ОТМАЗОК</div>
+      <div class="tally-l">за смену:</div>
+      <div class="tally-marks" data-tally></div>
+    </div>
+
+    <div class="paper paper--gen">
+      <div class="lift"></div>
+      <div class="sheet" data-gen-sheet>
+        <div class="meta"><span data-g="in">ВХ. № 0043</span><span>ЛИСТ 1 ИЗ 1</span></div>
+        <div class="to">Начальнику отдела продаж<br><b>Петрову И. С.</b><br>от менеджера Смирнова А. А.</div>
+        <div class="title" data-g="title">ОБЪЯСНИТЕЛЬНАЯ</div>
+        <div class="typed" data-g="body"></div>
+        <div class="sign">
+          <span data-date>09.10.2026</span>
+          <span class="sign-r">Подпись
+            <svg class="sign-def" viewBox="0 0 170 50" aria-hidden="true">
+              <path pathLength="1" d="M6 36c6-20 15-27 16-16s-9 19-6 13 9-11 13-6c3 5-2 12 3 9s7-15 12-12-3 14 4 10 6-12 11-10-2 11 5 9 9-14 14-17 8-6 7 3-6 22-2 18 10-18 14-15-1 10 6 7 20-10 34-14"/>
+              <path pathLength="1" d="M24 44c30-6 72-8 118-12"/>
+            </svg>
+            <span class="sign-pad" data-sign-pad><svg class="sign-user" aria-hidden="true"><path d=""/></svg></span>
+            <em>/Смирнов А. А./</em>
+          </span>
+        </div>
+        <div class="actions" data-actions>
+          <button class="btn btn--ghost" type="button" data-act="again">Составить ещё</button>
+          <button class="btn btn--cta" type="button" data-act="send">Отправить начальнику</button>
+        </div>
+        <div class="stamp stamp--rect" data-stamp="gen" style="left:150px;top:448px;--r:-8deg"><b data-g="stamp">СОГЛАСОВАНО</b><small>ОТДЕЛ ПРОДАЖ · <span data-date>09.10.2026</span></small></div>
+        <div class="mp" data-mp="gen"><span>М. П.</span></div>
+        <div class="bend"><i></i></div>
+        <div class="shade"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. МЕССЕНДЖЕР ============ -->
+  <div class="phone-wrap" aria-label="Мессенджер">
+    <div class="phone-shadow"></div>
+    <div class="phone">
+      <div class="screen">
+        <div class="island"></div>
+        <div class="status"><span data-clock>09:02</span><span class="st-ic"><i class="sig"></i><i class="wifi"></i><i class="bat"></i></span></div>
+        <div class="chat-head">
+          <span class="back">‹ <b>3</b></span>
+          <span class="ava">ИС</span>
+          <span class="who"><b>Иван Сергеевич</b><small data-presence>был(а) недавно</small></span>
+          <span class="call"></span>
+        </div>
+        <div class="chat-body"><div class="chat-day">Сегодня</div><div class="msgs" data-msgs></div></div>
+        <div class="chat-input">
+          <span class="clip-ic"></span>
+          <span class="field" data-input><span class="ph">Сообщение</span></span>
+          <span class="send-b" data-sendb role="button" aria-label="Отправить"></span>
+        </div>
+      </div>
+    </div>
+    <div class="stamp stamp--rect stamp--big" data-stamp="ok" style="left:34px;top:232px;--r:-11deg"><b data-ok="stamp">ПРОКАТИЛО</b><small><span data-ok="sub">ВОПРОС ЗАКРЫТ</span> · <span data-date>09.10.2026</span></small></div>
+    <div class="mp" data-mp="ok"><span>М. П.</span></div>
+  </div>
+  <button class="tag-btn" type="button" data-act="back">← Составить ещё одну</button>
+
+  <!-- Штамп в руке и подсказки -->
+  <div class="stamp-shadow tool-shadow round" data-tool-shadow></div>
+  <div class="stamp-tool tool round" data-tool><div class="plate"></div><div class="label"></div><div class="handle"></div></div>
+  <div class="hint" data-hint data-side="left"><div class="hint-inner">
+    <div class="hint-tag"><small data-hint-step></small><b data-hint-text></b><i data-hint-sub></i></div>
+    <svg class="hint-arrow" viewBox="0 0 62 62" aria-hidden="true"><path d="M5 38 C 16 26, 32 24, 52 31"/><path d="M41 21 L 54 31 L 41 41"/></svg>
+  </div></div>
+
+  <div id="fx"></div>
+</div>
+</main>
+
+<script src="js/data.js"></script>
+<script src="js/sound.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
